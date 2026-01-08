@@ -42,16 +42,28 @@ export default function DashboardClient() {
 
   return (
     <main className="min-h-screen bg-[#050b16] text-white relative pb-24">
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: "radial-gradient(circle at 10% 20%, #22d3ee 0, transparent 20%), radial-gradient(circle at 80% 0%, #a855f7 0, transparent 18%)",
-        filter: "blur(50px)",
-      }} />
-      <Header user={data.user} rateLimit={data.rateLimit} momentum={data.momentum} />
+      <div
+        className="absolute inset-0 opacity-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 10% 20%, #22d3ee 0, transparent 20%), radial-gradient(circle at 80% 0%, #a855f7 0, transparent 18%)",
+          filter: "blur(50px)",
+        }}
+      />
+      <Header
+        user={data.user}
+        rateLimit={data.rateLimit}
+        momentum={data.momentum}
+      />
       <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 py-6 space-y-6">
         <StatsBar totals={data.totals} momentum={data.momentum} />
 
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <StreakMomentum streaks={data.streaks} momentum={data.momentum} totals={data.totals} />
+          <StreakMomentum
+            streaks={data.streaks}
+            momentum={data.momentum}
+            totals={data.totals}
+          />
           <LanguageDistribution languages={data.languages} />
           <ProductivityPatterns productivity={data.productivity} />
         </section>

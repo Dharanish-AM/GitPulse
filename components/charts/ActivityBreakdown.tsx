@@ -81,7 +81,10 @@ function CustomTooltip({ active, payload, label }: any) {
     <div className="bg-[#0f172a] border border-cyan-500/30 rounded-lg p-3 text-sm">
       <div className="font-semibold text-white mb-1">{label}</div>
       {payload.map((item: any) => (
-        <div key={item.dataKey} className="flex items-center gap-2 text-xs text-gray-200">
+        <div
+          key={item.dataKey}
+          className="flex items-center gap-2 text-xs text-gray-200"
+        >
           <span
             className="w-3 h-3 rounded-sm"
             style={{ backgroundColor: item.color }}
@@ -111,7 +114,10 @@ function CustomLegend({ payload }: any) {
   );
 }
 
-export default function ActivityBreakdown({ heatmap, totals }: ActivityBreakdownProps) {
+export default function ActivityBreakdown({
+  heatmap,
+  totals,
+}: ActivityBreakdownProps) {
   const data = toWeeklySeries(heatmap, totals);
 
   return (
@@ -122,7 +128,10 @@ export default function ActivityBreakdown({ heatmap, totals }: ActivityBreakdown
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="commits" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.4} />
@@ -153,7 +162,10 @@ export default function ActivityBreakdown({ heatmap, totals }: ActivityBreakdown
               tick={{ fill: "#7b8aa5", fontSize: 11 }}
               allowDecimals={false}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#1f2937", strokeWidth: 1 }} />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ stroke: "#1f2937", strokeWidth: 1 }}
+            />
             <Legend verticalAlign="bottom" content={<CustomLegend />} />
             <Area
               type="monotone"

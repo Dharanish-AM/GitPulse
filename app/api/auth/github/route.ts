@@ -1,23 +1,49 @@
-// GitHub OAuth callback route
-// Handle GitHub OAuth authentication
+import { NextResponse } from "next/server";
+import axios from "axios";
 
-import { NextRequest, NextResponse } from 'next/server';
+interface TokenResponse {
+  access_token: string;
+  token_type: string;
+  scope: string;
+}
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code');
-  const state = searchParams.get('state');
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
 
   if (!code) {
-    return NextResponse.json(
-      { error: 'Missing authorization code' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing code" }, { status: 400 });
   }
 
-  // TODO: Exchange code for token
-  // TODO: Store user session
-  // TODO: Redirect to dashboard
+  try {
+    const { data } = await axios.post<TokenResponse>(
+      "https://github.com/login/oauth/access_token",
+      {
+        client_id: process.env.GITHUB_CLIENT_ID!,
+        client_secret: process.env.GITHUB_CLIENT_SECRET!,
+        code,
+        state,
+      },
+      { headers: { Accept: "application/json" } }
+    );
 
-  return NextResponse.redirect('/');
+    const res = NextResponse.redirect(
+      process.env.NEXT_PUBLIC_APP_URL || "/"
+    );
+    // Set secure, httpOnly cookie with the token
+    res.cookies.set("gh_token", data.access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
+    return res;
+  } catch {
+    return NextResponse.json(
+      { error: "OAuth token exchange failed" },
+      { status: 500 }
+    );
+  }
 }

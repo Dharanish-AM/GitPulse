@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface CollaboratorCardProps {
   name: string;
   avatar: string;
@@ -18,7 +20,7 @@ export default function CollaboratorCard({
       rel="noopener noreferrer"
       className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
     >
-      <img
+      <Image
         src={avatar}
         alt={name}
         className="w-10 h-10 rounded-full"

@@ -1,23 +1,16 @@
-import { Octokit } from '@octokit/rest';
+import { Octokit } from "octokit";
+import { graphql } from "@octokit/graphql";
 
-let octokit: Octokit | null = null;
+export const createOctokit = (token: string) => new Octokit({ auth: token });
 
-export function initOctokit(token: string) {
-  octokit = new Octokit({
-    auth: token,
-  });
-  return octokit;
-}
+export const createGraphQL = (token: string) =>
+  graphql.defaults({ headers: { authorization: `token ${token}` } });
 
-export function getOctokit(): Octokit {
-  if (!octokit) {
-    throw new Error('Octokit not initialized');
-  }
-  return octokit;
-}
-
-export async function getUserData(username: string) {
-  const octokit = getOctokit();
-  const { data } = await octokit.users.getByUsername({ username });
-  return data;
+export async function getRateLimit(octokit: Octokit) {
+  const { data } = await octokit.request("GET /rate_limit");
+  return {
+    remaining: data.resources.core.remaining,
+    limit: data.resources.core.limit,
+    resetAt: new Date(data.resources.core.reset * 1000).toISOString(),
+  };
 }

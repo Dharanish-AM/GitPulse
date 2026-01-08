@@ -42,3 +42,13 @@ export async function getCollaborators(
   });
   return data;
 }
+
+export async function getCodeFrequency(
+  octokit: Octokit,
+  owner: string,
+  repo: string
+) {
+  // Weekly additions/deletions; may take time for GitHub to generate
+  const { data } = await octokit.repos.getCodeFrequencyStats({ owner, repo });
+  return data; // [[weekEpoch, additions, deletions], ...]
+}

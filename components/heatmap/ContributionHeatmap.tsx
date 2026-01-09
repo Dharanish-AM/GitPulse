@@ -13,7 +13,8 @@ function toCalendar(heatmap: ContributionHeatmapProps["heatmap"]) {
   heatmap.forEach((d) => byDate.set(d.date, d.count));
   const dates = heatmap.map((d) => new Date(d.date));
   const min = new Date(Math.min(...dates.map((d) => d.getTime())));
-  const max = new Date(Math.max(...dates.map((d) => d.getTime())));
+  // Force the calendar to extend to today to avoid gaps on the right
+  const max = new Date();
   const start = new Date(min);
   start.setDate(start.getDate() - start.getDay()); // back to Sunday
   const weeks: { date: string; count: number }[][] = [];

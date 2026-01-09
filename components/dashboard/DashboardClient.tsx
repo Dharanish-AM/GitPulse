@@ -13,6 +13,7 @@ import ActivityBreakdown from "@/components/charts/ActivityBreakdown";
 import RecentActivity from "@/components/activity/RecentActivity";
 import CodeFrequencyChart from "@/components/charts/CodeFrequencyChart";
 import TopCollaborators from "@/components/collaborators/TopCollaborators";
+import ActivityInsights from "@/components/stats/ActivityInsights";
 import FloatingFilters from "@/components/filters/FloatingFilters";
 import Card from "../ui/Card";
 
@@ -83,7 +84,6 @@ export default function DashboardClient() {
       />
       <div className="relative z-10 w-full px-4 md:px-8 lg:px-12 py-6 space-y-6">
         <StatsBar totals={data.totals} momentum={data.momentum} />
-
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <StreakMomentum
             streaks={data.streaks}
@@ -93,22 +93,18 @@ export default function DashboardClient() {
           <LanguageDistribution languages={data.languages} />
           <ProductivityPatterns productivity={data.productivity} />
         </section>
-
         <ContributionHeatmap heatmap={data.heatmap} />
-
         <section className="">
           <ActivityBreakdown heatmap={data.heatmap} totals={data.totals} />
         </section>
-
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TopRepositories repos={data.topRepos} />
 
           <RecentActivity activity={data.recentActivity} />
         </section>
-
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CodeFrequencyChart codeFrequency={data.codeFrequency} />
-          <TopCollaborators collaborators={data.collaborators} />
+          <ActivityInsights heatmap={data.heatmap} />
         </section>
       </div>
       <FloatingFilters />

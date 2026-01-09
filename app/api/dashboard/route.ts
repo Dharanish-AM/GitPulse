@@ -136,7 +136,7 @@ export async function GET(req: Request) {
   // Top repositories (by stars) with naive contributions placeholder
   const topRepos = repoNodes
     .sort((a, b) => b.stargazerCount - a.stargazerCount)
-    .slice(0, 5)
+    .slice(0, 9)
     .map((r) => ({
       name: r.name,
       stars: r.stargazerCount,

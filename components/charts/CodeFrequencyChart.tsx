@@ -61,7 +61,7 @@ export default function CodeFrequencyChart({
   );
 
   return (
-    <Card className="bg-[#0c1322] border-[#12314a] text-white h-full">
+    <Card className="bg-[#0c1322] border-[#12314a] text-white h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <GitGraph className="text-emerald-400" size={20} />
@@ -89,7 +89,7 @@ export default function CodeFrequencyChart({
         </div>
       </div>
 
-      <div className="h-40">
+      <div className="flex-1 min-h-[200px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
@@ -133,7 +133,7 @@ export default function CodeFrequencyChart({
               stroke="#ec4899"
               strokeWidth={2}
               fill="url(#cf_del)"
-              stackId="2" // Separate stacks so they overlay or stack depending on preference. Usually separating them allows seeing both volumes clearly.
+              stackId="2"
               animationDuration={1000}
             />
           </AreaChart>

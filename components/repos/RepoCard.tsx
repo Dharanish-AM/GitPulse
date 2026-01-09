@@ -12,8 +12,8 @@ export default function RepoCard({ repo }: RepoCardProps) {
         <div className="p-2 rounded-lg bg-cyan-950/30 text-cyan-400 group-hover:text-cyan-300 transition-colors">
           <span className="text-lg font-mono">#</span>
         </div>
-        <div>
-          <div className="text-white font-semibold group-hover:text-cyan-100 transition-colors">
+        <div className="min-w-0 flex-1">
+          <div className="text-white font-semibold group-hover:text-cyan-100 transition-colors truncate">
             {repo.name}
           </div>
           <div className="text-sm text-gray-400 flex items-center gap-3 mt-1">

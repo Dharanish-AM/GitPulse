@@ -86,7 +86,7 @@ export default function ContributionHeatmap({
       </div>
 
       <div className="flex items-center justify-between text-xs text-gray-500 mt-3">
-        <div className="grid grid-cols-12 w-full">
+        <div className="hidden md:grid grid-cols-12 w-full">
           {[
             "Jan",
             "Feb",

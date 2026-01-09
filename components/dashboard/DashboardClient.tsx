@@ -93,7 +93,7 @@ export default function DashboardClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050b16] text-white relative pb-24">
+    <main className="min-h-screen bg-[#050b16] text-white relative pb-16 md:pb-24">
       <Header
         user={data.user}
         rateLimit={data.rateLimit}

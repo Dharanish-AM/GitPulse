@@ -14,8 +14,12 @@ export default function Header({ user, rateLimit, momentum }: HeaderProps) {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <p className="text-lg font-semibold text-white leading-tight">GitPulse</p>
-            <p className="text-xs text-gray-400">Activity Visualizer</p>
+            <p className="text-lg font-semibold text-white leading-tight">
+              GitPulse
+            </p>
+            <p className="text-xs text-gray-400 hidden sm:block">
+              Activity Visualizer
+            </p>
           </div>
         </div>
 

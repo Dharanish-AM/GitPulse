@@ -25,7 +25,15 @@ export interface DashboardData {
   };
   momentum: {
     weeklyChangePercent: number;
-    state: "rising" | "stable" | "dropping";
+    total: number;
+    state:
+      | "rising"
+      | "stable"
+      | "dropping"
+      | "low"
+      | "on track"
+      | "exceeding"
+      | "declining";
   };
   languages: {
     name: string;

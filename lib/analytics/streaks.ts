@@ -18,5 +18,28 @@ export function calculateStreak(contributions: ContributionData[]) {
     }
   }
 
+  // Grace period: If today has 0 contributions, check if we had a streak yesterday.
+  // "Current Streak" usually means "active streak". If I haven't coded *yet* today,
+  // my streak from yesterday is still valid until the end of the day.
+  if (
+    contributions.length > 0 &&
+    contributions[contributions.length - 1].count === 0 &&
+    currentStreak === 0
+  ) {
+    // Re-calculate streak excluding the last day (today)
+    let prevStreak = 0;
+    for (let i = 0; i < contributions.length - 1; i++) {
+      if (contributions[i].count > 0) {
+        prevStreak++;
+      } else {
+        prevStreak = 0;
+      }
+    }
+    // If we had a streak ending yesterday, claim it as valid.
+    if (prevStreak > 0) {
+      currentStreak = prevStreak;
+    }
+  }
+
   return { currentStreak, longestStreak };
 }

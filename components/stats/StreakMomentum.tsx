@@ -31,7 +31,7 @@ export default function StreakMomentum({
         />
         <MetricTile
           label="This Week"
-          value={Math.max(totals.commits ?? 0, momentum.weeklyChangePercent)}
+          value={momentum.total}
           color="text-cyan-300"
         />
       </div>

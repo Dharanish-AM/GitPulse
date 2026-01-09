@@ -12,8 +12,16 @@ export default function RepoCard({ repo }: RepoCardProps) {
         <div>
           <div className="text-white font-semibold">{repo.name}</div>
           <div className="text-sm text-gray-400 flex items-center gap-3 mt-1">
-            <span className="flex items-center gap-1"><span className="text-yellow-300">★</span>{repo.stars}</span>
-            <span className="flex items-center gap-1"><span className="text-cyan-300">↺</span>{repo.contributions}</span>
+            <span className="flex items-center gap-1">
+              <span className="text-yellow-300">★</span>
+              {repo.stars}
+            </span>
+            {repo.contributions > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="text-cyan-300">↺</span>
+                {repo.contributions}
+              </span>
+            )}
             <span className="text-xs text-gray-500">{repo.language}</span>
           </div>
         </div>

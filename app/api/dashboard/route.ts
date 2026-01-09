@@ -4,7 +4,10 @@ import { createOctokit, createGraphQL, getRateLimit } from "@/lib/octokit";
 import { DashboardData, DashboardRange } from "@/types/dashboard";
 import { calculateStreak } from "@/lib/analytics/streaks";
 import { calculateMomentum, getMomentumLabel } from "@/lib/analytics/momentum";
-import { CONTRIBUTION_DATA_QUERY, RECENT_ACTIVITY_QUERY } from "@/lib/github.graphql";
+import {
+  CONTRIBUTION_DATA_QUERY,
+  RECENT_ACTIVITY_QUERY,
+} from "@/lib/github.graphql";
 import { log } from "@/lib/logger";
 
 function defaultRange(): DashboardRange {
@@ -18,7 +21,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const fromParam = searchParams.get("from");
   const toParam = searchParams.get("to");
-  const range: DashboardRange = fromParam && toParam ? { from: fromParam, to: toParam } : defaultRange();
+  const range: DashboardRange =
+    fromParam && toParam ? { from: fromParam, to: toParam } : defaultRange();
 
   const cookieStore = await cookies();
   const token = cookieStore.get("gh_token")?.value;
@@ -43,9 +47,15 @@ export async function GET(req: Request) {
     }) as unknown as ContributionResponse,
   ]);
 
-  const calWeeks = contrib.viewer.contributionsCollection.contributionCalendar.weeks as Array<{ contributionDays: Array<{ contributionCount: number; date: string }> }>;
+  const calWeeks = contrib.viewer.contributionsCollection.contributionCalendar
+    .weeks as Array<{
+    contributionDays: Array<{ contributionCount: number; date: string }>;
+  }>;
   const heatmap = calWeeks.flatMap((w) =>
-    w.contributionDays.map((d) => ({ date: d.date, count: d.contributionCount }))
+    w.contributionDays.map((d) => ({
+      date: d.date,
+      count: d.contributionCount,
+    }))
   );
   log("debug", "Heatmap computed", { days: heatmap.length });
 
@@ -58,11 +68,18 @@ export async function GET(req: Request) {
   const recent7 = last14.slice(-7).reduce((s, d) => s + d.count, 0);
   const prev7 = last14.slice(0, 7).reduce((s, d) => s + d.count, 0);
   const momentumPct = calculateMomentum(recent7, prev7);
-  const momentumState = getMomentumLabel(momentumPct).toLowerCase() as DashboardData["momentum"]["state"];
-  log("debug", "Momentum computed", { recent7, prev7, momentumPct, momentumState });
+  const momentumState = getMomentumLabel(
+    momentumPct
+  ).toLowerCase() as DashboardData["momentum"]["state"];
+  log("debug", "Momentum computed", {
+    recent7,
+    prev7,
+    momentumPct,
+    momentumState,
+  });
 
   // Totals via GraphQL contributionsCollection totals
-  const totalsGql = await gql(
+  const totalsGql = (await gql(
     `query Totals($from: DateTime!, $to: DateTime!) {
       viewer {
         contributionsCollection(from: $from, to: $to) {
@@ -74,12 +91,12 @@ export async function GET(req: Request) {
       }
     }`,
     { from: range.from, to: range.to }
-  ) as unknown as TotalsResponse;
+  )) as unknown as TotalsResponse;
 
   const totalsNode = totalsGql.viewer.contributionsCollection;
 
   // Languages: from repositories primaryLanguage distribution
-  const reposGql = await gql(
+  const reposGql = (await gql(
     `query Repos($login: String!) {
       user(login: $login) {
         repositories(first: 100, privacy: PUBLIC, ownerAffiliations: OWNER, orderBy: {field: UPDATED_AT, direction: DESC}) {
@@ -93,7 +110,7 @@ export async function GET(req: Request) {
       }
     }`,
     { login }
-  ) as unknown as ReposResponse;
+  )) as unknown as ReposResponse;
 
   const repoNodes = reposGql.user.repositories.nodes;
   const languageCounts: Record<string, number> = {};
@@ -101,11 +118,20 @@ export async function GET(req: Request) {
     const lang = r.primaryLanguage?.name || "Other";
     languageCounts[lang] = (languageCounts[lang] || 0) + 1;
   }
-  const totalLangRepos = Object.values(languageCounts).reduce((s, v) => s + v, 0) || 1;
-  const languages = Object.entries(languageCounts)
+  const totalLangRepos =
+    Object.values(languageCounts).reduce((s, v) => s + v, 0) || 1;
+  let languages = Object.entries(languageCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
-    .map(([name, count]) => ({ name, percent: Math.round((count / totalLangRepos) * 100) }));
+    .map(([name, count]) => ({
+      name,
+      percent: Math.round((count / totalLangRepos) * 100),
+    }));
+
+  const currentSum = languages.reduce((sum, lang) => sum + lang.percent, 0);
+  if (currentSum < 100) {
+    languages.push({ name: "Other", percent: 100 - currentSum });
+  }
 
   // Top repositories (by stars) with naive contributions placeholder
   const topRepos = repoNodes
@@ -120,17 +146,21 @@ export async function GET(req: Request) {
   log("debug", "Repos computed", { count: repoNodes.length });
 
   // Recent Activity (limited)
-  const recentActivityGql = await gql(RECENT_ACTIVITY_QUERY, { first: 5 }) as unknown as RecentActivityResponse;
-  const recentActivity = recentActivityGql.viewer.repositories.nodes.flatMap((n) => {
-    const repoName = n.name;
-    const edges = n.defaultBranchRef?.target?.history?.edges || [];
-    return edges.map((e) => ({
-      type: "commit",
-      title: e.node.message,
-      repo: repoName,
-      timeAgo: new Date(e.node.committedDate).toISOString(),
-    }));
-  }).slice(0, 10);
+  const recentActivityGql = (await gql(RECENT_ACTIVITY_QUERY, {
+    first: 5,
+  })) as unknown as RecentActivityResponse;
+  const recentActivity = recentActivityGql.viewer.repositories.nodes
+    .flatMap((n) => {
+      const repoName = n.name;
+      const edges = n.defaultBranchRef?.target?.history?.edges || [];
+      return edges.map((e) => ({
+        type: "commit",
+        title: e.node.message,
+        repo: repoName,
+        timeAgo: new Date(e.node.committedDate).toISOString(),
+      }));
+    })
+    .slice(0, 10);
 
   // Productivity (basic from commits timestamps)
   const byHour = new Array(24).fill(0);
@@ -145,20 +175,35 @@ export async function GET(req: Request) {
   const peakDay = days[byDay.indexOf(Math.max(...byDay))] || "Mon";
 
   // Collaborators from the top repo (if available)
-  let collaborators: Array<{ login: string; avatar_url: string; url: string; contributions: number }> = [];
+  let collaborators: Array<{
+    login: string;
+    avatar_url: string;
+    url: string;
+    contributions: number;
+  }> = [];
   if (repoNodes.length > 0) {
     const owner = login;
     const repo = repoNodes[0].name;
     try {
-      const cols = await octokit.request("GET /repos/{owner}/{repo}/collaborators", { owner, repo });
-      type CollaboratorResp = { login: string; avatar_url: string; html_url: string };
+      const cols = await octokit.request(
+        "GET /repos/{owner}/{repo}/collaborators",
+        { owner, repo }
+      );
+      type CollaboratorResp = {
+        login: string;
+        avatar_url: string;
+        html_url: string;
+      };
       collaborators = (cols.data as unknown as CollaboratorResp[]).map((c) => ({
         login: c.login,
         avatar_url: c.avatar_url,
         url: c.html_url,
         contributions: 0,
       }));
-      log("debug", "Collaborators fetched", { repo, collaborators: collaborators.length });
+      log("debug", "Collaborators fetched", {
+        repo,
+        collaborators: collaborators.length,
+      });
     } catch {}
   }
 
@@ -191,7 +236,11 @@ export async function GET(req: Request) {
     },
     heatmap,
     streaks: { current: currentStreak, longest: longestStreak },
-    momentum: { weeklyChangePercent: momentumPct, state: momentumState },
+    momentum: {
+      weeklyChangePercent: momentumPct,
+      total: recent7,
+      state: momentumState,
+    },
     languages,
     productivity: { peakHour, peakDay, byHour, byDay },
     topRepos,
@@ -208,7 +257,9 @@ interface ContributionResponse {
   viewer: {
     contributionsCollection: {
       contributionCalendar: {
-        weeks: Array<{ contributionDays: Array<{ contributionCount: number; date: string }> }>;
+        weeks: Array<{
+          contributionDays: Array<{ contributionCount: number; date: string }>;
+        }>;
       };
     };
   };

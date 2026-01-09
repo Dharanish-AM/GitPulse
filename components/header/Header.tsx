@@ -10,7 +10,7 @@ interface HeaderProps {
 
 export default function Header({ user, rateLimit, momentum }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 px-6 py-4 backdrop-blur border-b border-[#12314a] bg-[#050b16]/80">
+    <header className="sticky top-0 z-30 px-4 py-3 md:px-6 md:py-4 backdrop-blur border-b border-[#12314a] bg-[#050b16]/80">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>

@@ -79,25 +79,68 @@ export async function GET(req: Request) {
     momentumState,
   });
 
-  // Fetch lifetime totals from account creation to now
-  const lifetimeFrom = new Date(createdAt).toISOString();
-  const lifetimeTo = new Date().toISOString();
-  
-  const lifetimeTotalsRes = (await gql(
-    `query LifetimeTotals($from: DateTime!, $to: DateTime!) {
-      viewer {
-        contributionsCollection(from: $from, to: $to) {
-          totalCommitContributions
-          totalPullRequestContributions
-          totalIssueContributions
-          totalPullRequestReviewContributions
-        }
-      }
-    }`,
-    { from: lifetimeFrom, to: lifetimeTo },
-  )) as unknown as TotalsResponse;
+  // Fetch lifetime totals year by year (GitHub API limits to 1 year max per query)
+  let lifetimeFrom = "2008-01-01T00:00:00Z";
+  if (createdAt) {
+    try {
+      lifetimeFrom = new Date(createdAt).toISOString();
+    } catch (e) {
+      log("warn", "Could not parse createdAt", { createdAt });
+    }
+  }
 
-  const totalsNode = lifetimeTotalsRes.viewer.contributionsCollection;
+  const startYear = new Date(lifetimeFrom).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = startYear; y <= currentYear; y++) {
+    years.push(y);
+  }
+
+  // Fetch totals for each year
+  const fetchYearTotals = async (year: number) => {
+    const from = `${year}-01-01T00:00:00Z`;
+    const to = year === currentYear
+      ? new Date().toISOString()
+      : `${year}-12-31T23:59:59Z`;
+
+    const res = (await gql(
+      `query Totals($from: DateTime!, $to: DateTime!) {
+        viewer {
+          contributionsCollection(from: $from, to: $to) {
+            totalCommitContributions
+            totalPullRequestContributions
+            totalIssueContributions
+            totalPullRequestReviewContributions
+          }
+        }
+      }`,
+      { from, to },
+    )) as unknown as TotalsResponse;
+    return res.viewer.contributionsCollection;
+  };
+
+  const yearlyTotals = await Promise.all(years.map(fetchYearTotals));
+
+  // Aggregate all years
+  const totalsNode = yearlyTotals.reduce(
+    (acc, curr) => ({
+      totalCommitContributions:
+        acc.totalCommitContributions + curr.totalCommitContributions,
+      totalPullRequestContributions:
+        acc.totalPullRequestContributions + curr.totalPullRequestContributions,
+      totalIssueContributions:
+        acc.totalIssueContributions + curr.totalIssueContributions,
+      totalPullRequestReviewContributions:
+        acc.totalPullRequestReviewContributions +
+        curr.totalPullRequestReviewContributions,
+    }),
+    {
+      totalCommitContributions: 0,
+      totalPullRequestContributions: 0,
+      totalIssueContributions: 0,
+      totalPullRequestReviewContributions: 0,
+    },
+  );
 
   // Languages: from repositories primaryLanguage distribution
   const reposGql = (await gql(

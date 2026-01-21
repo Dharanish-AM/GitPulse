@@ -1,5 +1,7 @@
 # GitPulse
 
+[![GitHub Marketplace](https://img.shields.io/badge/GitHub-Marketplace-blue)](https://github.com/marketplace/gitpulse-analytics)
+
 **The Pulse of your Codebase.**
 Visualize, Analyze, and Optimize your development workflow.
 

@@ -79,70 +79,25 @@ export async function GET(req: Request) {
     momentumState,
   });
 
-  // Calculate years range for lifetime totals
-  const startYear = new Date(createdAt).getFullYear();
-  const currentYear = new Date().getFullYear();
-  const years = [];
-  for (let y = startYear; y <= currentYear; y++) {
-    years.push(y);
-  }
-
-  // Helper to fetch totals for a specific year
-  const fetchYearTotals = async (year: number) => {
-    const from = `${year}-01-01T00:00:00Z`;
-    // For current year, use today's date; for past years, use end of year
-    const currentDate = new Date();
-    const to = year === currentYear 
-      ? currentDate.toISOString() 
-      : `${year}-12-31T23:59:59Z`;
-
-    // Check if start year is the created year to adjust 'from' date if needed?
-    // Actually Github API handles it well even if from is before creation,
-    // but better to be precise for the first year if strictly required.
-    // However, simplicity: full year query is standard for contribution graph logic.
-    // Let's stick strictly to what the user asked: "totalcommits all year" -> implies lifetime.
-
-    const res = (await gql(
-      `query Totals($from: DateTime!, $to: DateTime!) {
-        viewer {
-          contributionsCollection(from: $from, to: $to) {
-            totalCommitContributions
-            totalPullRequestContributions
-            totalIssueContributions
-            totalPullRequestReviewContributions
-          }
+  // Fetch lifetime totals from account creation to now
+  const lifetimeFrom = new Date(createdAt).toISOString();
+  const lifetimeTo = new Date().toISOString();
+  
+  const lifetimeTotalsRes = (await gql(
+    `query LifetimeTotals($from: DateTime!, $to: DateTime!) {
+      viewer {
+        contributionsCollection(from: $from, to: $to) {
+          totalCommitContributions
+          totalPullRequestContributions
+          totalIssueContributions
+          totalPullRequestReviewContributions
         }
-      }`,
-      { from, to },
-    )) as unknown as TotalsResponse;
-    return res.viewer.contributionsCollection;
-  };
+      }
+    }`,
+    { from: lifetimeFrom, to: lifetimeTo },
+  )) as unknown as TotalsResponse;
 
-  // Fetch all years in parallel
-  const yearlyTotals = await Promise.all(years.map(fetchYearTotals));
-
-  // Aggregate totals
-  const aggregatedTotals = yearlyTotals.reduce(
-    (acc, curr) => ({
-      totalCommitContributions:
-        acc.totalCommitContributions + curr.totalCommitContributions,
-      totalPullRequestContributions:
-        acc.totalPullRequestContributions + curr.totalPullRequestContributions,
-      totalIssueContributions:
-        acc.totalIssueContributions + curr.totalIssueContributions,
-      totalPullRequestReviewContributions:
-        acc.totalPullRequestReviewContributions +
-        curr.totalPullRequestReviewContributions,
-    }),
-    {
-      totalCommitContributions: 0,
-      totalPullRequestContributions: 0,
-      totalIssueContributions: 0,
-      totalPullRequestReviewContributions: 0,
-    },
-  );
-
-  const totalsNode = aggregatedTotals;
+  const totalsNode = lifetimeTotalsRes.viewer.contributionsCollection;
 
   // Languages: from repositories primaryLanguage distribution
   const reposGql = (await gql(

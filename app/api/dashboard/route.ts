@@ -37,6 +37,7 @@ export async function GET(req: Request) {
   // Fetch viewer basic info via REST for login
   const viewerRes = await octokit.request("GET /user");
   const login: string = viewerRes.data.login as string;
+  const createdAt = viewerRes.data.created_at; // needed for lifetime stats
   log("info", "Dashboard request", { login, range });
 
   // GraphQL: contributions calendar and repositories
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
     w.contributionDays.map((d) => ({
       date: d.date,
       count: d.contributionCount,
-    }))
+    })),
   );
   log("debug", "Heatmap computed", { days: heatmap.length });
 
@@ -69,7 +70,7 @@ export async function GET(req: Request) {
   const prev7 = last14.slice(0, 7).reduce((s, d) => s + d.count, 0);
   const momentumPct = calculateMomentum(recent7, prev7);
   const momentumState = getMomentumLabel(
-    momentumPct
+    momentumPct,
   ).toLowerCase() as DashboardData["momentum"]["state"];
   log("debug", "Momentum computed", {
     recent7,
@@ -78,22 +79,67 @@ export async function GET(req: Request) {
     momentumState,
   });
 
-  // Totals via GraphQL contributionsCollection totals
-  const totalsGql = (await gql(
-    `query Totals($from: DateTime!, $to: DateTime!) {
-      viewer {
-        contributionsCollection(from: $from, to: $to) {
-          totalCommitContributions
-          totalPullRequestContributions
-          totalIssueContributions
-          totalPullRequestReviewContributions
-        }
-      }
-    }`,
-    { from: range.from, to: range.to }
-  )) as unknown as TotalsResponse;
+  // Calculate years range for lifetime totals
+  const startYear = new Date(createdAt).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = startYear; y <= currentYear; y++) {
+    years.push(y);
+  }
 
-  const totalsNode = totalsGql.viewer.contributionsCollection;
+  // Helper to fetch totals for a specific year
+  const fetchYearTotals = async (year: number) => {
+    const from = `${year}-01-01T00:00:00Z`;
+    // For current year, we can just use end of year or "now" but end of year is safe
+    const to = `${year}-12-31T23:59:59Z`;
+
+    // Check if start year is the created year to adjust 'from' date if needed?
+    // Actually Github API handles it well even if from is before creation,
+    // but better to be precise for the first year if strictly required.
+    // However, simplicity: full year query is standard for contribution graph logic.
+    // Let's stick strictly to what the user asked: "totalcommits all year" -> implies lifetime.
+
+    const res = (await gql(
+      `query Totals($from: DateTime!, $to: DateTime!) {
+        viewer {
+          contributionsCollection(from: $from, to: $to) {
+            totalCommitContributions
+            totalPullRequestContributions
+            totalIssueContributions
+            totalPullRequestReviewContributions
+          }
+        }
+      }`,
+      { from, to },
+    )) as unknown as TotalsResponse;
+    return res.viewer.contributionsCollection;
+  };
+
+  // Fetch all years in parallel
+  const yearlyTotals = await Promise.all(years.map(fetchYearTotals));
+
+  // Aggregate totals
+  const aggregatedTotals = yearlyTotals.reduce(
+    (acc, curr) => ({
+      totalCommitContributions:
+        acc.totalCommitContributions + curr.totalCommitContributions,
+      totalPullRequestContributions:
+        acc.totalPullRequestContributions + curr.totalPullRequestContributions,
+      totalIssueContributions:
+        acc.totalIssueContributions + curr.totalIssueContributions,
+      totalPullRequestReviewContributions:
+        acc.totalPullRequestReviewContributions +
+        curr.totalPullRequestReviewContributions,
+    }),
+    {
+      totalCommitContributions: 0,
+      totalPullRequestContributions: 0,
+      totalIssueContributions: 0,
+      totalPullRequestReviewContributions: 0,
+    },
+  );
+
+  const totalsNode = aggregatedTotals;
 
   // Languages: from repositories primaryLanguage distribution
   const reposGql = (await gql(
@@ -109,7 +155,7 @@ export async function GET(req: Request) {
         }
       }
     }`,
-    { login }
+    { login },
   )) as unknown as ReposResponse;
 
   const repoNodes = reposGql.user.repositories.nodes;
@@ -160,7 +206,7 @@ export async function GET(req: Request) {
           {
             owner,
             repo: repo.name,
-          }
+          },
         );
 
         if (Array.isArray(stats.data)) {
@@ -182,7 +228,7 @@ export async function GET(req: Request) {
       } catch (e) {
         // Ignore errors
       }
-    })
+    }),
   );
 
   const codeFrequency = Array.from(codeFrequencyMap.entries())
@@ -206,7 +252,7 @@ export async function GET(req: Request) {
       }));
     })
     .sort(
-      (a, b) => new Date(b.timeAgo).getTime() - new Date(a.timeAgo).getTime()
+      (a, b) => new Date(b.timeAgo).getTime() - new Date(a.timeAgo).getTime(),
     );
 
   // Use ALL fetched activity for productivity stats to resolve "accuracy" issues
@@ -237,7 +283,7 @@ export async function GET(req: Request) {
     try {
       const cols = await octokit.request(
         "GET /repos/{owner}/{repo}/collaborators",
-        { owner, repo }
+        { owner, repo },
       );
       type CollaboratorResp = {
         login: string;
